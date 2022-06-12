@@ -10,10 +10,21 @@
 <script>
 export default {
     name:'',
-    mounted(){
+    data(){
+        return {
+            text: '1231'
+        }
+    },
+    async mounted(){
+        await this.new()
         console.log('11132111');
         console.log('at');
         console.log(process.env);
+    },
+    methods:{
+        new() {
+            this.text = '1'
+        }
     }
 }
 </script>

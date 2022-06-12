@@ -1,24 +1,24 @@
 const path = require('path')
-const { VueLoaderPlugin } = require('vue-loader')
 const Webpack = require('webpack')
+const { VueLoaderPlugin } = require('vue-loader')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
-const ProgressBarWebpackPlugin = require('progress-bar-webpack-plugin')
-const FriendlyErrorsWebpackPlugin = require('friendly-errors-webpack-plugin')
+const TerserPlugin = require('terser-webpack-plugin')
+const miniCssExtractPlugin = require('mini-css-extract-plugin')
+const OptimizeCssAssetsWebpackPlugin = require('optimize-css-assets-webpack-plugin')
+// 复用loader
 const commonCssLoader = [
-    'style-loader',
+    miniCssExtractPlugin.loader,
     'css-loader',
     {
-      // 还需要在package.json中定义browserslist
       loader: 'postcss-loader',
     }
-  ];
+]
+
 module.exports = {
-    // 文件的入口
     entry: './src/main.js',
-    // 文件的出口
     output: {
         path: path.resolve(__dirname,'dist'),
-        // publicPath:'/dev',
+        // publicPath: '/', // 打包出的路径配置
         filename: 'js/[name].[contenthash:6].js',
         clean:true
     },
@@ -37,13 +37,13 @@ module.exports = {
             {test:/\.s[ca]ss$/,use:[...commonCssLoader,'sass-loader']},
             {
                 test: /\.m?js$/,
+                exclude: /node_modules/,
                 use:{
                     loader:'babel-loader'
                 }
             },
-            // webpack5 用法
             {
-                test:/\.(png|jpe?g|gif)$/,
+                test:/\.(jpe?g|png|gif|svg)$/,
                 type:'asset/resource',
                 generator: {
                     filename: 'img/[name].[hash:8].[ext]'
@@ -58,42 +58,33 @@ module.exports = {
             }
         ]
     },
-    mode: 'development',
-    // 插件
     plugins: [
-        new ProgressBarWebpackPlugin(),
+        new OptimizeCssAssetsWebpackPlugin(),
         new VueLoaderPlugin(),
-        new FriendlyErrorsWebpackPlugin({
-            compilationSuccessInfo: {
-                messages: [`Your application is running here: http://localhost:7072`]
-              },
-              // 是否每次都清空控制台
-              clearConsole: true,
+        new miniCssExtractPlugin({
+            filename: 'css/[name].[contenthash:6].css'
         }),
         new HtmlWebpackPlugin({
             template:'./public/index.html',
-            // title:'自定义安装vue'
+            title:'测试',
+            inject: true,
+            minify: {
+                removeComments: true,
+                removeAttributeQuotes: true,
+                collapseWhitespace: true,
+            }
+        }),
+        new TerserPlugin({
+            extractComments: false,// webpack5不将注释提取到单独的文件中
         }),
         new Webpack.DefinePlugin({
-            'process.env': require('./.env.development')
+            'process.env': require(`./.env.production`)
         }),
     ],
-    devtool: 'source-map',
-    target:'web',
-    // 热更新
-    devServer:{
-        // static: path.resolve(__dirname,'dist'),
-        contentBase: path.resolve(__dirname, 'dist'),
-        watchOptions:{
-            // 忽略文件
-            ignored: /node_modules/
-        },
-        quiet: true,
-        open:true,
-        hot: true,
-        port: '7072',
-        compress:true,
-        overlay: true,
-        clientLogLevel: 'error'
-    }
+    mode: 'production',
+    performance: {
+        hints: false
+    },
+    devtool: false,
+    target: 'browserslist',
 }
